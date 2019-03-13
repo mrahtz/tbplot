@@ -155,7 +155,7 @@ def main():
 
     print("Saving figure...")
     if len(args.log_dir) == 1:
-        out_filename = os.path.basename(args.log_dir[0])
+        out_filename = os.path.basename(args.log_dir[0]) + '.png'
     else:
         longest_common_prefix = os.path.commonprefix(args.log_dir)
         longest_common_suffix = os.path.commonprefix([d[::-1] for d in args.log_dir])[::-1]
