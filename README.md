@@ -14,7 +14,7 @@ It'll read logs in parallel using as many cores as you have.
 ## Usage
 
 ```
-$ tbplot run-seed0 run-seed1 run-seed2
+$ tbplot --smoothing 0.6 --n_cols 4 run-seed0 run-seed1 run-seed2
 ```
 
 (Be careful to supply each run as a separate argument, because tbplot
