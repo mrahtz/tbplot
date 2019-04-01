@@ -28,7 +28,7 @@ def read_events_file(events_filename):
             for value in event.summary.value:
                 if value.tag not in events:
                     events[value.tag] = []
-                events[value.tag].append((event.wall_time, value.simple_value))
+                events[value.tag].append((event.wall_time, event.step, value.simple_value))
     except Exception as e:
         print(f"While reading '{events_filename}':", e)
     return events
@@ -76,6 +76,7 @@ def plot_values(ax, y_values, x_values, yname, xname, title_str, label, color, s
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('log_dir', nargs='*')
+    parser.add_argument('--step', action='store_true')
     parser.add_argument('--n_cols', type=int, default=4)
     parser.add_argument('--smoothing', type=float, default=0.6)
     parser.add_argument('--out')
@@ -136,10 +137,16 @@ def main():
         label = log_dir
         for tag, events in events.items():
             ax = axes_by_tag[tag]
-            timestamps, values = list(zip(*events))
-            relative_timestamps = [t - timestamps[0] for t in timestamps]
-            units = scale_timestamps(relative_timestamps)
-            line = plot_values(ax, values, relative_timestamps, 'Value', f'Time ({units})', tag,
+            timestamps, steps, values = list(zip(*events))
+
+            if args.step:
+                xvals = steps
+                xlab = 'Total Timesteps'
+            else:  # relative timestamps
+                xvals = [t - timestamps[0] for t in timestamps]
+                units = scale_timestamps(xvals)
+                xlab = f'Time ({units})'
+            line = plot_values(ax, values, xvals, 'Value', xlab, tag,
                                label=label, color=color, smoothing=args.smoothing)
             lines.append(line)
             labels.append(label)
