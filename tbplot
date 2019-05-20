@@ -109,6 +109,45 @@ def scale_timestamps(timestamps):
     return units
 
 
+def split_preserving_seps(s, seps=('_', '-')):
+    """
+    'foo-bar_1' => ['foo', '-', 'bar', '_', '1']
+    """
+    arr = []
+    cur = ""
+    for c in s:
+        if c in seps:
+            if cur:
+                arr.append(cur)
+            arr.append(c)
+            cur = ""
+        else:
+            cur += c
+    arr.append(cur)
+    return arr
+
+
+def common_name(names):
+    """
+    ['foo-1-bar', 'foo-2-bar'] => 'foo-*-bar'
+    """
+    fields = [split_preserving_seps(name) for name in names]
+    if len({len(field) for field in fields}) == 1:
+        n_fields = len(fields[0])
+        common_name = ""
+        for n in range(n_fields):
+            if len({field[n] for field in fields}) == 1:
+                # This field the same in all names
+                common_name += fields[0][n]
+            else:
+                common_name += '*'
+    else:
+        longest_common_prefix = os.path.commonprefix(names)
+        longest_common_suffix = os.path.commonprefix([d[::-1] for d in names])[::-1]
+        common_name = longest_common_prefix + '*' + longest_common_suffix
+    return common_name
+
+
 def main():
     args = get_args()
 
@@ -161,9 +200,7 @@ def main():
         if len(args.log_dir) == 1:
             out_filename = os.path.basename(args.log_dir[0] + '.png')
         else:
-            longest_common_prefix = os.path.commonprefix(args.log_dir)
-            longest_common_suffix = os.path.commonprefix([d[::-1] for d in args.log_dir])[::-1]
-            out_filename = longest_common_prefix + '*' + longest_common_suffix + '.png'
+            out_filename = common_name(args.log_dir) + '.png'
     savefig(out_filename, bbox_inches='tight', dpi=300)
 
 
