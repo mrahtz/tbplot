@@ -92,23 +92,41 @@ def get_args():
     return args
 
 
-def scale_timestamps(timestamps):
+class TimeUnit:
+    def __init__(self, rank, str, divisor):
+        self.rank = rank
+        self.str = str
+        self.divisor = divisor
+
+    def __gt__(self, other):
+        return self.rank > other.rank
+
+    def __str__(self):
+        return self.str
+
+
+MILLISECONDS = TimeUnit(0, 'ms', 1e-3)
+SECONDS = TimeUnit(1, 'seconds', 1)
+MINUTES = TimeUnit(2, 'minutes', 60)
+HOURS = TimeUnit(3, 'hours', 3600)
+
+
+def get_approprimate_time_units(timestamps):
     t = max(timestamps)
     if t < 1:
-        d = 1e-3
-        units = 'ms'
+        units = MILLISECONDS
     elif t < 60:
-        d = 1
-        units = 'seconds'
+        units = SECONDS
     elif t < 3600:
-        d = 60
-        units = 'minutes'
+        units = MINUTES
     else:
-        d = 3600
-        units = 'hours'
-    for n in range(len(timestamps)):
-        timestamps[n] /= d
+        units = HOURS
     return units
+
+
+def scale_timestamps(timestamps, unit):
+    for n in range(len(timestamps)):
+        timestamps[n] /= unit.divisor
 
 
 def split_preserving_seps(s, seps=('_', '-')):
@@ -169,6 +187,7 @@ def main():
     fig, axes = plt.subplots(w, h, figsize=(6 * h, 4 * w), squeeze=False)
     axes = [ax for l in axes for ax in l]
     axes_by_tag = {tag: axes[n] for n, tag in enumerate(all_tags)}
+    time_units_by_tag = {}
     lines, labels = [], []
     for log_dir_n, (log_dir, events) in enumerate(events_by_log_dir.items()):
         print(log_dir)
@@ -183,8 +202,14 @@ def main():
                 xlab = 'Total Timesteps'
             else:  # relative timestamps
                 xvals = [t - timestamps[0] for t in timestamps]
-                units = scale_timestamps(xvals)
-                xlab = f'Time ({units})'
+                units = get_approprimate_time_units(timestamps)
+                if tag in time_units_by_tag:
+                    prev_units = time_units_by_tag[tag]
+                    if prev_units > units:
+                        units = prev_units
+                time_units_by_tag[tag] = units
+                scale_timestamps(xvals, units)
+                xlab = f'Time ({str(units)})'
             line = plot_values(ax, values, xvals, 'Value', xlab, tag,
                                label=label, color=color, smoothing=args.smoothing)
             lines.append(line)
